@@ -96,23 +96,17 @@
             gap: 12px;
             margin-bottom: 10px;
         }
-
-        /* BAGIAN YANG DIRUBAH */
         #album-art {
             width: 90px;
             height: 90px;
             background-color: #fff;
             border: 1px solid #777;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            
-            /* Menambahkan gambar 123.jpg */
             background-image: url('fotojadul.jpg'); 
             background-size: cover;
             background-position: center;
-            
             transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-
         .playing #album-art {
             transform: scale(1.05);
         }
@@ -197,18 +191,18 @@
     <div class="screen">
         <div class="screen-header">
             <span>▶Ⅱ</span>
-            <span>16:01</span>
+            <span id="clock">16:01</span>   <!-- Jam Real Time WIB -->
             <div class="battery"></div>
         </div>
         <div class="now-playing">
             <div class="track-count">1 of 100</div>
-            
+           
             <div class="track-info-container">
                 <div id="album-art"></div>
                 <div class="text-meta">
                     <div id="song-title">PT MENCARI CINTA SEJATI</div>
                     <div id="artist-name">Artas Music</div>
-                    <div class="album-name">Enjoy Life </div>
+                    <div class="album-name">Anak Rantau Tasik </div>
                 </div>
             </div>
             <div class="progress-container">
@@ -240,7 +234,20 @@
     const progressFill = document.getElementById('progress-fill');
     const currentTimeEl = document.getElementById('current-time');
     const durationTimeEl = document.getElementById('duration-time');
+    const clockEl = document.getElementById('clock');
 
+    // ==================== JAM REAL TIME WIB ====================
+    function updateWIBClock() {
+        const now = new Date();
+        const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // UTC +7
+        let hours = wibTime.getUTCHours();
+        let minutes = wibTime.getUTCMinutes();
+        clockEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+    setInterval(updateWIBClock, 1000);
+    updateWIBClock(); // Jalankan sekali saat load
+
+    // ==================== MUSIC PLAYER ====================
     function togglePlay() {
         if (audio.paused) {
             audio.play();
@@ -263,7 +270,7 @@
         if (audio.duration) {
             const percentage = (audio.currentTime / audio.duration) * 100;
             progressFill.style.width = percentage + "%";
-            
+           
             currentTimeEl.innerText = formatTime(audio.currentTime);
             durationTimeEl.innerText = "-" + formatTime(audio.duration - audio.currentTime);
         }
