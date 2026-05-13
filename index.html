@@ -102,7 +102,7 @@
             background-color: #fff;
             border: 1px solid #777;
             box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-            background-image: url('fotojadul.jpg'); 
+            background-image: url('fotojadul.jpg');
             background-size: cover;
             background-position: center;
             transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -125,6 +125,29 @@
         }
         #artist-name { font-size: 12px; color: #444; opacity: 0.9; margin: 0; }
         .album-name { font-size: 12px; color: #555; margin-top: 2px; }
+
+        /* Playlist */
+        #playlist {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.95);
+            color: white;
+            padding: 15px;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 20;
+        }
+        .playlist-item {
+            padding: 10px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+        .playlist-item.active {
+            background: var(--apple-blue);
+            color: white;
+        }
+
         .progress-container {
             margin-top: auto;
             padding-bottom: 8px;
@@ -191,18 +214,18 @@
     <div class="screen">
         <div class="screen-header">
             <span>▶Ⅱ</span>
-            <span id="clock">16:01</span>   <!-- Jam Real Time WIB -->
+            <span id="clock">16:01</span>
             <div class="battery"></div>
         </div>
         <div class="now-playing">
-            <div class="track-count">1 of 100</div>
-           
+            <div class="track-count" id="track-count">1 of 5</div>
+          
             <div class="track-info-container">
                 <div id="album-art"></div>
                 <div class="text-meta">
                     <div id="song-title">NO EXIT</div>
                     <div id="artist-name">PT MENCARI CINTA SEJATI</div>
-                    <div class="album-name">TASIK PUNYA CERITA </div>
+                    <div class="album-name">TASIK PUNYA CERITA</div>
                 </div>
             </div>
             <div class="progress-container">
@@ -216,49 +239,146 @@
             </div>
         </div>
     </div>
-    <div class="wheel" onclick="togglePlay()">
-        <div class="wheel-label menu">MENU</div>
-        <div class="wheel-label next">▶▶</div>
-        <div class="wheel-label prev">◀◀</div>
-        <div class="wheel-label play-pause">▶/Ⅱ</div>
-        <div class="center-button"></div>
+
+    <!-- Playlist -->
+    <div id="playlist"></div>
+
+    <div class="wheel">
+        <div class="wheel-label menu" onclick="togglePlaylist()">MENU</div>
+        <div class="wheel-label next" onclick="nextSong()">▶▶</div>
+        <div class="wheel-label prev" onclick="prevSong()">◀◀</div>
+        <div class="wheel-label play-pause" onclick="togglePlay()">▶/Ⅱ</div>
+        <div class="center-button" onclick="togglePlay()"></div>
     </div>
 </div>
 
-<audio id="audio-player" src="noexit.mp3"></audio>
+<audio id="audio-player"></audio>
 
 <script>
+    let songs = [
+        {
+            title: "NO EXIT",
+            artist: "PT MENCARI CINTA SEJATI",
+            src: "noexit.mp3",
+            cover: "fotojadul.jpg"
+        },
+        {
+            title: "NEW SYCLON",
+            artist: "PT MENCARI CINTA SEJATI",
+            src: "newsyc.mp3",
+            cover: "foto2.jpg.jfif"
+        },
+        {
+            title: "Midnight Drive",
+            artist: "Neon Nights",
+            src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+            cover: "https://picsum.photos/id/201/300/300"
+        },
+        {
+            title: "Summer Rain",
+            artist: "Chill Vibes",
+            src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+            cover: "https://picsum.photos/id/237/300/300"
+        },
+        {
+            title: "Electric Dreams",
+            artist: "Synthwave",
+            src: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+            cover: "https://picsum.photos/id/870/300/300"
+        }
+    ];
+
+    let currentIndex = 0;
+
     const audio = document.getElementById('audio-player');
-    const songTitle = document.getElementById('song-title');
-    const ipod = document.querySelector('.ipod');
+    const titleEl = document.getElementById('song-title');
+    const artistEl = document.getElementById('artist-name');
+    const albumArt = document.getElementById('album-art');
+    const trackCount = document.getElementById('track-count');
     const progressFill = document.getElementById('progress-fill');
     const currentTimeEl = document.getElementById('current-time');
     const durationTimeEl = document.getElementById('duration-time');
     const clockEl = document.getElementById('clock');
+    const playlistEl = document.getElementById('playlist');
 
     // ==================== JAM REAL TIME WIB ====================
     function updateWIBClock() {
         const now = new Date();
-        const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000)); // UTC +7
+        const wibTime = new Date(now.getTime() + (7 * 60 * 60 * 1000));
         let hours = wibTime.getUTCHours();
         let minutes = wibTime.getUTCMinutes();
         clockEl.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
     setInterval(updateWIBClock, 1000);
-    updateWIBClock(); // Jalankan sekali saat load
+    updateWIBClock();
 
-    // ==================== MUSIC PLAYER ====================
+    // ==================== LOAD LAGU ====================
+    function loadSong(index) {
+        const song = songs[index];
+        audio.src = song.src;
+        titleEl.textContent = song.title;
+        artistEl.textContent = song.artist;
+        albumArt.style.backgroundImage = `url('${song.cover}')`;
+        trackCount.textContent = `${index + 1} of ${songs.length}`;
+        updateActivePlaylist();
+    }
+
     function togglePlay() {
         if (audio.paused) {
             audio.play();
-            ipod.classList.add('playing');
-            songTitle.style.color = "#3b97ee";
+            document.querySelector('.ipod').classList.add('playing');
         } else {
             audio.pause();
-            ipod.classList.remove('playing');
-            songTitle.style.color = "#000";
+            document.querySelector('.ipod').classList.remove('playing');
         }
     }
+
+    function nextSong() {
+        currentIndex = (currentIndex + 1) % songs.length;
+        loadSong(currentIndex);
+        audio.play();
+    }
+
+    function prevSong() {
+        currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+        loadSong(currentIndex);
+        audio.play();
+    }
+
+    function togglePlaylist() {
+        playlistEl.style.display = (playlistEl.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    function createPlaylist() {
+        playlistEl.innerHTML = songs.map((song, i) => `
+            <div class="playlist-item" onclick="playFromPlaylist(${i})">
+                ${i+1}. ${song.title} - ${song.artist}
+            </div>
+        `).join('');
+    }
+
+    function playFromPlaylist(index) {
+        currentIndex = index;
+        loadSong(index);
+        audio.play();
+        togglePlaylist();
+    }
+
+    function updateActivePlaylist() {
+        document.querySelectorAll('.playlist-item').forEach((el, i) => {
+            el.classList.toggle('active', i === currentIndex);
+        });
+    }
+
+    // Progress Bar
+    audio.ontimeupdate = function() {
+        if (audio.duration) {
+            const percentage = (audio.currentTime / audio.duration) * 100;
+            progressFill.style.width = percentage + "%";
+            currentTimeEl.innerText = formatTime(audio.currentTime);
+            durationTimeEl.innerText = "-" + formatTime(audio.duration - audio.currentTime);
+        }
+    };
 
     function formatTime(seconds) {
         let mins = Math.floor(seconds / 60);
@@ -266,19 +386,13 @@
         return mins + ":" + (secs < 10 ? '0' : '') + secs;
     }
 
-    audio.ontimeupdate = function() {
-        if (audio.duration) {
-            const percentage = (audio.currentTime / audio.duration) * 100;
-            progressFill.style.width = percentage + "%";
-           
-            currentTimeEl.innerText = formatTime(audio.currentTime);
-            durationTimeEl.innerText = "-" + formatTime(audio.duration - audio.currentTime);
-        }
-    };
-
     audio.onloadedmetadata = function() {
         durationTimeEl.innerText = "-" + formatTime(audio.duration);
     };
+
+    // Inisialisasi
+    createPlaylist();
+    loadSong(0);
 </script>
 </body>
 </html>
